@@ -2,6 +2,8 @@ package org.mifos.connector.ams.properties;
 
 public class Tenant {
 
+    private String clientId;
+    private String clientSecret;
     private String name;
     private String user;
     private String password;
@@ -48,5 +50,21 @@ public class Tenant {
 
     public void setFspId(String fspId) {
         this.fspId = fspId;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
+    }
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 }

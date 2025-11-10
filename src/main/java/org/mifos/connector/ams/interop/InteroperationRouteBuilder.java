@@ -45,6 +45,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.json.JSONObject;
 import org.mifos.connector.ams.errorhandler.ErrorTranslator;
+import org.mifos.connector.ams.tenant.LoginKeycloakResponseDTO;
 import org.mifos.connector.ams.tenant.TenantNotExistException;
 import org.mifos.connector.ams.utils.Utils;
 import org.mifos.connector.ams.zeebe.ZeebeUtil;
@@ -126,7 +127,6 @@ public class InteroperationRouteBuilder extends ErrorHandlerRouteBuilder {
                 e.getIn().setBody(exception.getMessage());
             }
         }).process(clientResponseProcessor).stop();
-
         from("direct:get-external-account").id("get-external-account")
                 .log(LoggingLevel.INFO,
                         "Get externalAccount with identifierType: ${exchangeProperty." + PARTY_ID_TYPE + "} with value: ${exchangeProperty."
@@ -233,6 +233,15 @@ public class InteroperationRouteBuilder extends ErrorHandlerRouteBuilder {
         from("direct:fincn-oauth").id("fincn-oauth")
                 .log(LoggingLevel.INFO, "Fineract CN oauth request for tenant: ${exchangeProperty." + TENANT_ID + "}")
                 .process(amsService::login).unmarshal().json(JsonLibrary.Jackson, LoginFineractCnResponseDTO.class);
+
+
+
+        from("direct:idp-oauth").routeId("idp-oauth")
+                .log(LoggingLevel.INFO, "IDP OAuth request for tenant: ${exchangeProperty.tenantId}")
+                .process(amsService::login)
+                .unmarshal().json(JsonLibrary.Jackson, LoginKeycloakResponseDTO.class);
+
+
 
         // @formatter:off
         from("direct:get-party")

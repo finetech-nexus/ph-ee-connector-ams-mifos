@@ -62,7 +62,7 @@
 
     <cxf:rsClient id="ams.local.auth" address="{{ams.local.auth.host}}">
         <cxf:properties>
-            <entry key="throwExceptionOnFailure" value="false"/>
+            <entry key="throwExceptionOnFailure" value="true"/>
             <entry key="bindingStyle" value="Custom"/>
             <entry key="binding" value-ref="cfxRsNotStreamingBinding"/>
             <entry key="synchronous" value="true"/>

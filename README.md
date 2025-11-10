@@ -1,4 +1,10 @@
 # ph-ee-connector-ams-mifos
+
+docker build -t nexusbank/ph-ee-connector-ams-mifos .
+docker tag nexusbank/ph-ee-connector-ams-mifos   nexusbank/ph-ee-connector-ams-mifos:1.7.0    
+docker login
+docker push nexusbank/ph-ee-connector-ams-mifos:1.7.0
+
 Payment Hub Enterprise Edition connector for local AMS.
 By default local quote is disabled and only empty Zeebe workers are started.
 Currently supported AMS backends: (configure corresponding yml files to modify properties)

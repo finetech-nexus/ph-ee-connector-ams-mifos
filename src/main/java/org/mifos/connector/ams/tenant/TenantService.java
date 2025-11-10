@@ -1,8 +1,10 @@
 package org.mifos.connector.ams.tenant;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.mifos.connector.ams.camel.config.CamelProperties.LOGIN_PASSWORD;
+import static org.mifos.connector.ams.camel.config.CamelProperties.CLIENT_ID;
+import static org.mifos.connector.ams.camel.config.CamelProperties.CLIENT_SECRET;
 import static org.mifos.connector.ams.camel.config.CamelProperties.LOGIN_USERNAME;
+import static org.mifos.connector.ams.camel.config.CamelProperties.LOGIN_PASSWORD;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.TENANT_ID;
 
 import java.util.Base64;
@@ -11,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.ws.rs.core.HttpHeaders;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
@@ -34,6 +37,7 @@ public class TenantService {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    @Autowired
     private ProducerTemplate producerTemplate;
 
     @Autowired
@@ -62,7 +66,6 @@ public class TenantService {
         }
 
         headers.put(HttpHeaders.AUTHORIZATION, getTenantAuthData(tenant).getToken());
-
         return headers;
     }
 
@@ -81,9 +84,15 @@ public class TenantService {
             return new CachedTenantAuth(
                     "Basic " + Base64.getEncoder().encodeToString((tenant.getUser() + ":" + tenant.getPassword()).getBytes(UTF_8)), null);
         } else if ("1.2".equals(amsLocalVersion) && "oauth".equals(tenantAuthtype)) {
-            // TODO implement
-            throw new RuntimeException("Unsupported authType: " + tenantAuthtype + ", for local fsp version: " + amsLocalVersion
-                    + ", for tenant: " + tenant.getName());
+            Exchange ex = new DefaultExchange(camelContext);
+            ex.setProperty(TENANT_ID, tenant.getName());
+            ex.setProperty(CLIENT_ID, tenant.getClientId());
+            ex.setProperty(CLIENT_SECRET, tenant.getClientSecret());
+            ex.setProperty(LOGIN_USERNAME, tenant.getUser());
+            ex.setProperty(LOGIN_PASSWORD, tenant.getPassword());
+            producerTemplate.send("direct:idp-oauth", ex);
+            LoginKeycloakResponseDTO response  = ex.getMessage().getBody(LoginKeycloakResponseDTO.class);
+            return new CachedTenantAuth("Bearer " +response.getAccessToken(), response.getAccessTokenExpiration());
         } else if ("cn".equals(amsLocalVersion) && "oauth".equals(tenantAuthtype)) {
             Exchange ex = new DefaultExchange(camelContext);
             ex.setProperty(TENANT_ID, tenant.getName());
