@@ -15,6 +15,7 @@ import static org.mifos.connector.ams.camel.config.CamelProperties.TRANSFER_ACTI
 import static org.mifos.connector.ams.camel.config.CamelProperties.X_CALLBACKURL;
 import static org.mifos.connector.ams.camel.config.CamelProperties.ZEEBE_JOB_KEY;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.ACCOUNT;
+import static org.mifos.connector.ams.zeebe.ZeebeVariables.NOTE;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.ACCOUNT_CURRENCY;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.ACCOUNT_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.ACCOUNT_NUMBER;
@@ -165,7 +166,8 @@ public class InteroperationRouteBuilder extends ErrorHandlerRouteBuilder {
         from("direct:send-transfers").id("send-transfers")
                 .log(LoggingLevel.INFO,
                         "Sending transfer with action: ${exchangeProperty." + TRANSFER_ACTION + "} "
-                                + " for transaction: ${exchangeProperty." + TRANSACTION_ID + "}")
+                                + " for transaction: ${exchangeProperty." + TRANSACTION_ID + "}"
+                                + " for note: ${exchangeProperty." + NOTE + "}")
                 .to("direct:get-external-account").process(prepareTransferRequest).process(pojoToString).process(amsService::sendTransfer)
                 .to("direct:error-handler") // this route will parse and set error field if exist
                 .log("Process type: ${exchangeProperty." + PROCESS_TYPE + "}").choice()

@@ -15,6 +15,18 @@ import org.springframework.validation.annotation.Validated;
 
 public class InteropTransfers {
 
+    @JsonProperty("note")
+    private String note;
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+
     @JsonProperty("transactionCode")
     private String transactionCode = null;
 

@@ -45,7 +45,7 @@ public class PrepareTransferRequest implements Processor {
         transactionType.setInitiatorType(InitiatorType.valueOf(initiatorType));
         transactionType.setScenario(Scenario.valueOf(scenario));
 
-        String note = zeebeVariable(exchange, NOTE, String.class);
+        String note = exchange.getProperty(NOTE, String.class);
         FspMoneyData amount = zeebeVariable(exchange, "amount", FspMoneyData.class);
         FspMoneyData fspFee = zeebeVariable(exchange, "fspFee", FspMoneyData.class);
         FspMoneyData fspCommission = zeebeVariable(exchange, "fspCommission", FspMoneyData.class);
@@ -74,11 +74,11 @@ public class PrepareTransferRequest implements Processor {
                     TransactionRole.valueOf(exchange.getProperty(TRANSACTION_ROLE, String.class)), transactionType, note);
         } else {
             transferRequestDTO = new TransferFspRequestDTO(transactionCode, transferCode,
-                    exchange.getProperty(EXTERNAL_ACCOUNT_ID, String.class), amount,
-                    TransactionRole.valueOf(exchange.getProperty(TRANSACTION_ROLE, String.class)));
+                    exchange.getProperty(EXTERNAL_ACCOUNT_ID, String.class), amount,null,null,
+                    TransactionRole.valueOf(exchange.getProperty(TRANSACTION_ROLE, String.class)), null, note);
         }
-
-        logger.debug("prepared transferRequestDTO: {}", objectMapper.writeValueAsString(transferRequestDTO));
+        logger.info("prepared transferRequestDTO: {}", note);
+        logger.info("prepared transferRequestDTO: {}", objectMapper.writeValueAsString(transferRequestDTO));
         exchange.getIn().setBody(transferRequestDTO);
     }
 }

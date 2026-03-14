@@ -132,6 +132,8 @@ public class ZeebeeWorkers {
                     ex.setProperty(TRANSFER_ACTION, PREPARE.name());
                     ex.setProperty(ZEEBE_JOB_KEY, job.getKey());
                     ex.setProperty(TRANSACTION_ROLE, TransactionRole.PAYER.name());
+                    String customNote = getCustomNote(channelRequest);
+                    ex.setProperty(NOTE,customNote);
                     ex.setProperty("payeeTenantId", job.getVariablesAsMap().get("payeeTenantId"));
                     logger.debug("Payee Id before block funds {}", job.getVariablesAsMap().get("payeeTenantId"));
                     producerTemplate.send("direct:send-transfers", ex);
@@ -153,6 +155,8 @@ public class ZeebeeWorkers {
                             TransactionChannelRequestDTO.class);
                     ex.setProperty(PARTY_ID_TYPE, channelRequest.getPayer().getPartyIdInfo().getPartyIdType().name());
                     ex.setProperty(PARTY_ID, channelRequest.getPayer().getPartyIdInfo().getPartyIdentifier());
+                    String customNote = getCustomNote(channelRequest);
+                    ex.setProperty(NOTE,customNote);
                     ex.setProperty(TRANSFER_ACTION, CREATE.name());
                     ex.setProperty(ZEEBE_JOB_KEY, job.getKey());
                     ex.setProperty(TRANSACTION_ROLE, TransactionRole.PAYER.name());
@@ -276,6 +280,7 @@ public class ZeebeeWorkers {
                         transactionType.setScenario(Scenario.DEPOSIT);
                         transactionRequest.setTransactionType(transactionType);
                         transactionRequest.setAmount(amount);
+                        transactionRequest.setNote(quoteRequest.getNote());
                         exchange.setProperty(CHANNEL_REQUEST, objectMapper.writeValueAsString(transactionRequest));
                         exchange.setProperty(TRANSACTION_ROLE, TransactionRole.PAYEE.name());
 
@@ -389,7 +394,7 @@ public class ZeebeeWorkers {
                     variables.put("initiator", transactionType.getInitiator().name());
                     variables.put("initiatorType", transactionType.getInitiatorType().name());
                     variables.put("scenario", transactionType.getScenario().name());
-                    variables.get(NOTE);
+                    variables.put(NOTE,transactionRequest.getNote() );
                     variables.put("amount", new FspMoneyData(transactionRequest.getAmount().getAmountDecimal(),
                             transactionRequest.getAmount().getCurrency()));
                     variables.put("processType", "api");
@@ -398,6 +403,9 @@ public class ZeebeeWorkers {
                     String partyId = transactionRequest.getPayee().getPartyIdInfo().getPartyIdentifier();
                     ex.setProperty(PARTY_ID_TYPE, partyIdType);
                     ex.setProperty(PARTY_ID, partyId);
+                    String customNote = getCustomNote(transactionRequest);
+                    ex.setProperty(NOTE,customNote);
+
                     logger.info("PartyIdType: {}, PartyId: {}", partyIdType, partyId);
 
                     ex.setProperty(CHANNEL_REQUEST, objectMapper.writeValueAsString(transactionRequest));
@@ -479,6 +487,17 @@ public class ZeebeeWorkers {
                 }).name(WORKER_SEND_CALLBACK).maxJobsActive(workerMaxJobs).open();
             }
         }
+    }
+
+    private static String getCustomNote(TransactionChannelRequestDTO channelRequest) {
+        String sender = channelRequest.getPayer().getPartyIdInfo().getPartySubIdOrType()!=null ?channelRequest.getPayer().getPartyIdInfo().getPartySubIdOrType(): channelRequest.getPayer().getPartyIdInfo().getPartyIdentifier();
+        String receip = channelRequest.getPayee().getPartyIdInfo().getPartySubIdOrType()!=null ?channelRequest.getPayee().getPartyIdInfo().getPartySubIdOrType(): channelRequest.getPayee().getPartyIdInfo().getPartyIdentifier();
+        String customNote = "{"
+                + "\"payer\": \"" +sender + "\", "
+                + "\"payee\": \"" + receip + "\", "
+                + "\"note\": \"" + channelRequest.getNote() + "\""
+                + "}";
+        return customNote;
     }
 
     private void logWorkerDetails(ActivatedJob job) {

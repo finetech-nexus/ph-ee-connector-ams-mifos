@@ -1,14 +1,15 @@
 package org.mifos.connector.ams.interop;
 
 import static org.mifos.connector.ams.camel.config.CamelProperties.ZEEBE_JOB_KEY;
-import static org.mifos.connector.ams.zeebe.ZeebeVariables.PARTY_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.PARTY_ID_TYPE;
-import static org.mifos.connector.ams.zeebe.ZeebeVariables.PAYEE_PARTY_RESPONSE;
+import static org.mifos.connector.ams.zeebe.ZeebeVariables.PARTY_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.TENANT_ID;
+import static org.mifos.connector.ams.zeebe.ZeebeVariables.PAYEE_PARTY_RESPONSE;
 import static org.mifos.connector.common.ams.dto.LegalForm.PERSON;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.camel.Exchange;
@@ -62,6 +63,7 @@ public class ClientResponseProcessor implements Processor {
 
             Map<String, Object> variables = Utils.getDefaultZeebeErrorVariable(exchange, errorTranslator);
             logger.info("Setting error info: {}", variables);
+            variables.put("partyLookupFailed", true);
             zeebeClient.newCompleteCommand(exchange.getProperty(ZEEBE_JOB_KEY, Long.class)).variables(variables).send();
         } else {
             Party mojaloopParty = new Party(new PartyIdInfo(IdentifierType.valueOf(partyIdType), partyId, null,
@@ -103,6 +105,7 @@ public class ClientResponseProcessor implements Processor {
 
             Map<String, Object> variables = new HashMap<>();
             variables.put(PAYEE_PARTY_RESPONSE, objectMapper.writeValueAsString(mojaloopParty));
+            variables.put("partyLookupFailed", false);
             zeebeClient.newCompleteCommand(exchange.getProperty(ZEEBE_JOB_KEY, Long.class)).variables(variables).send();
         }
     }
