@@ -2,6 +2,7 @@ package org.mifos.connector.ams.interop;
 
 import static org.mifos.connector.ams.camel.config.CamelProperties.TRANSACTION_ROLE;
 import static org.mifos.connector.ams.zeebe.ZeebeUtil.zeebeVariable;
+import static org.mifos.connector.ams.zeebe.ZeebeUtil.zeebeVariablesFrom;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.BOOK_TRANSACTION_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.EXTERNAL_ACCOUNT_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.NOTE;
@@ -9,6 +10,8 @@ import static org.mifos.connector.ams.zeebe.ZeebeVariables.TRANSACTION_ID;
 import static org.mifos.connector.ams.zeebe.ZeebeVariables.TRANSFER_CODE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -46,7 +49,7 @@ public class PrepareTransferRequest implements Processor {
         transactionType.setScenario(Scenario.valueOf(scenario));
 
         String note = exchange.getProperty(NOTE, String.class);
-        FspMoneyData amount = zeebeVariable(exchange, "amount", FspMoneyData.class);
+        FspMoneyData amount = money(exchange, "amount");
         FspMoneyData fspFee = zeebeVariable(exchange, "fspFee", FspMoneyData.class);
         FspMoneyData fspCommission = zeebeVariable(exchange, "fspCommission", FspMoneyData.class);
 
@@ -80,5 +83,21 @@ public class PrepareTransferRequest implements Processor {
         logger.info("prepared transferRequestDTO: {}", note);
         logger.info("prepared transferRequestDTO: {}", objectMapper.writeValueAsString(transferRequestDTO));
         exchange.getIn().setBody(transferRequestDTO);
+    }
+
+    /**
+     * Rail processes store {@code amount} as a number and {@code currency} beside it. Other processes store an
+     * {@link FspMoneyData} object. Both shapes are accepted.
+     */
+    private FspMoneyData money(Exchange exchange, String name) throws Exception {
+        Object content = zeebeVariablesFrom(exchange).get(name);
+        if (content == null) {
+            return null;
+        }
+        if (content instanceof Map || content instanceof FspMoneyData) {
+            return zeebeVariable(exchange, name, FspMoneyData.class);
+        }
+        String currency = zeebeVariable(exchange, "currency", String.class);
+        return new FspMoneyData(new BigDecimal(content.toString()), currency);
     }
 }
