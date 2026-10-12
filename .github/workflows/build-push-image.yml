@@ -7,7 +7,7 @@ name: Build and push image
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
     paths:
       - '**.java'
       - 'build.gradle'
@@ -34,7 +34,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build with Gradle
-        run: ./gradlew build -x test --no-daemon
+        run: ./gradlew bootJar -x test --no-daemon
 
       - name: Ensure keystore for Docker build
         run: |
