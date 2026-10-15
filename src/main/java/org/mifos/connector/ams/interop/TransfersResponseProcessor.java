@@ -53,13 +53,13 @@ public class TransfersResponseProcessor implements Processor {
             variables.put(ACTION_FAILURE_MAP.get(transferAction), true);
 
         } else {
-            variables.put(TRANSFER_RESPONSE_PREFIX + "-" + transferAction, exchange.getIn().getBody());
+            variables.put(TRANSFER_RESPONSE_PREFIX + "-" + transferAction, exchange.getIn().getBody(String.class));
             if (PREPARE.name().equals(transferAction)) {
                 variables.put(TRANSFER_CODE, exchange.getProperty(TRANSFER_CODE));
             }
             variables.put(ACTION_FAILURE_MAP.get(transferAction), false);
         }
-        variables.put(FINERACT_RESPONSE_BODY, exchange.getIn().getBody());
+        variables.put(FINERACT_RESPONSE_BODY, exchange.getIn().getBody(String.class));
         zeebeClient.newCompleteCommand(exchange.getProperty(ZEEBE_JOB_KEY, Long.class)).variables(variables).send();
         logger.info("Completed job with key: {}", exchange.getProperty(ZEEBE_JOB_KEY, Long.class));
     }
