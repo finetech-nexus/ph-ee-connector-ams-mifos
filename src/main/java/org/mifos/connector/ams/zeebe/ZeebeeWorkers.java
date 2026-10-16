@@ -170,6 +170,30 @@ public class ZeebeeWorkers {
                 }
             }).name("book-funds").maxJobsActive(workerMaxJobs).open();
 
+            zeebeClient.newWorker().jobType("credit-funds").handler((client, job) -> {
+                logWorkerDetails(job);
+                if (isAmsLocalEnabled) {
+                    Exchange ex = new DefaultExchange(camelContext);
+                    zeebeVariablesToCamelProperties(job.getVariablesAsMap(), ex, TRANSACTION_ID, CHANNEL_REQUEST, TENANT_ID,
+                            EXTERNAL_ACCOUNT_ID, LOCAL_QUOTE_RESPONSE, TRANSFER_CODE);
+                    TransactionChannelRequestDTO channelRequest = objectMapper.readValue(ex.getProperty(CHANNEL_REQUEST, String.class),
+                            TransactionChannelRequestDTO.class);
+                    ex.setProperty(PARTY_ID_TYPE, channelRequest.getPayer().getPartyIdInfo().getPartyIdType().name());
+                    ex.setProperty(PARTY_ID, channelRequest.getPayer().getPartyIdInfo().getPartyIdentifier());
+                    ex.setProperty(NOTE, getCustomNote(channelRequest));
+                    ex.setProperty(TRANSFER_ACTION, CREATE.name());
+                    ex.setProperty(ZEEBE_JOB_KEY, job.getKey());
+                    ex.setProperty(TRANSACTION_ROLE, TransactionRole.PAYEE.name());
+                    ex.setProperty("payeeTenantId", job.getVariablesAsMap().get("payeeTenantId"));
+                    ex.setProperty("processType", "api");
+                    producerTemplate.send("direct:send-transfers", ex);
+                } else {
+                    Map<String, Object> variables = new HashMap<>();
+                    variables.put("transferCreateFailed", false);
+                    zeebeClient.newCompleteCommand(job.getKey()).variables(variables).send();
+                }
+            }).name("credit-funds").maxJobsActive(workerMaxJobs).open();
+
             zeebeClient.newWorker().jobType("release-block").handler((client, job) -> {
                 logWorkerDetails(job);
                 if (isAmsLocalEnabled) {
